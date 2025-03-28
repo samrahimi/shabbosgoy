@@ -7,7 +7,10 @@ This README is very minimal
 ## Installation
 
 ```bash
-pip install http://github.com/samrahimi/shabbosgoy/dist/shabbosgoy-0.1.2.tar.gz
+pip install  https://github.com/samrahimi/shabbosgoy/raw/refs/heads/main/dist/shabbosgoy-0.1.2.tar.gz
+
+#Debian / Ubuntu (see note below):
+#pip install --break-system-packages https://github.com/samrahimi/shabbosgoy/raw/refs/heads/main/dist/shabbosgoy-0.1.2.tar.gz
 ```
 
 Or build a development version with live edits:
@@ -51,11 +54,36 @@ Run in agentic mode (agent will complete the task over one or more steps until i
 shabbosgoy "your prompt" --agentic
 ```
 
+
+Attach a document to the context:
+
+```bash
+shabbosgoy "your prompt" -c path/to/your/file
+```
+
+ 
+Use in headless mode in an automated toolchain:
+
+```bash
+cat sitemap.xml | shabbosgoy "change the phone number on the contact page and save changes to that file" --headless --agentic | netlify deploy .
+```
+
+BE the toolchain:
+
+```bash
+shabbosgoy "you are in the root folder of my website... please remove the devops engineer from the about us page because we just replaced him with a bot, and then deploy to netlify using the cli (already installed and configured)" --agentic
+```
+
+*Your Shabbos Goy has the same privileges as the user who requests its services, so be careful what you wish for*
+
 ## Features
 
 - Executes commands and scripts in a Linux terminal environment
 - Maintains working memory across steps
 - Solves complex multi-step problems
+- Optimized for DevOps, system administration, troubleshooting, and business process automation
+- Human in the loop by default: you have 5 seconds to review each proposed action before it is executed. Privileged actions will request you to authorize sudo like any other tool or script. 
+- No enforced guardrails or limitations: the agent can do anything possible from the command line in your environment, within the privilege of the user who invokes it. Human in the loop may be disabled using --headless (headless mode is not recommended on production systems)
 
 ## License
 

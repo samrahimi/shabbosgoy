@@ -12,7 +12,7 @@ But where to find such a system? This was not like building a consumer-friendly 
 
 Before shabbosgoy, I would have googled the process and pasted stuff into terminal and nano until I had a semi working toolchain, which would likely be less robust than desired.
 
-But this morning, while lying in bed, I created a complete integration test in less than 15 minutes, using just 3 prompts. Note: the following examples use the "shiksa" command syntax. This is an alias for "shabbosgoy --agentic" and is completely interchangable in every other way. "goy" on the other hand, is an alias for shabbosgoy in one-shot, stateless mode, with no special flags. All 3 commands share the same entry point and configuration environment.
+But this morning, while lying in bed, I created a complete integration test in less than 15 minutes, using just 3 prompts. As you will see, however, it is a lot more interesting than the average integration test, because the agent writing the tests is also the subject of those tests. We encourage you to follow along in your terminal and run these prompts yourself: see README.md to get started 
 
 
 * STEP 1: Make the container and set it up, then install the tool from github *

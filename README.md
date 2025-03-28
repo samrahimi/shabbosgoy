@@ -18,6 +18,7 @@ python3 -m build
 pip install . -e
 ```
 
+Note: you may have to --break-system-packages or use your favorite workaround when installing on Debian / Ubuntu. Ignore the scary warnings - the only package it depends on is `requests` and installation will not break anything!
 
 ## Setup
 

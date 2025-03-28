@@ -21,6 +21,7 @@ classifiers = [
 keywords = ["ai", "sysadmin", "terminal", "automation"]
 dependencies = [
     "click",
+    "requests"
 ]
 requires-python = ">=3.8"
 

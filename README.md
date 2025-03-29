@@ -74,6 +74,20 @@ BE the toolchain:
 shabbosgoy "you are in the root folder of my website... please remove the devops engineer from the about us page because we just replaced him with a bot, and then deploy to netlify using the cli (already installed and configured)" --agentic
 ```
 
+
+Write a full length novel (recommend the latest Gemini 2.5 Pro model - it is free and very good at creative work):
+```bash
+shabbosgoy "write a medical thriller novel that touches on contemporary social and political issues of medical ethics. it should involve a scary viral pandemic and a miraculous cure or vaccine that launches in remarkably short time. but the side effects are not well studied, and we still don't know where the virus originated. start by writing a detailed outline that includes plot summary, characters, and chapter-by-chapter breakdown of key events in the story. then, write the full text of the book, one chapter per action step. for generating longform text use heredocs format to avoid parsing issues and keep it clean. each chapter must be 3000 words long. create a new directory and save each step's output in its own markdown file. good luck!" --agentic
+```
+
+Make it into an ebook so you can actually read it:
+
+```bash
+shabbbosgoy --agentic "concatenate the markdown files in this folder. outline first, then the chapter files in order. then convert it to an epub format that looks good on a mobile device"
+```
+
+Finally, give it some more work to do while you kick back and relax with a book!
+
 *Your Shabbos Goy has the same privileges as the user who requests its services, so be careful what you wish for*
 
 ## Features

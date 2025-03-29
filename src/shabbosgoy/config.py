@@ -3,6 +3,9 @@
 
 import json
 from pathlib import Path
+import platform
+import subprocess
+import re
 
 # Paths (hardcoded settings)
 DATA_DIR = Path.home() / ".shabbosgoy"
@@ -108,7 +111,7 @@ Intel i7 CPU (8 cores)
 Screen resolution: 1920x1080
 Machine: Lenovo Yoga, 14 inch laptop, Late 2022. 
 Mouse/Touchpad: Yes
-Touchscreen: Enfabled
+Touchscreen: Enabled
 Digitizer/Pen Input: Enabled
 </system_information>
 
@@ -148,8 +151,141 @@ Additional Guidelines:
 - Format output for readability when possible (use flags like -l, -h, --color, etc.)
 - You operate in a stateless mode - each request is processed independently with no memory of previous interactions. You will not be able to view the result after your output is executed.
     - If the user requests a complex task that is obviously better served by a *stateful* agent that maintains context over multiple steps, advise them to retry the request with the --agentic command line flag (this allows you to complete multistep tasks in complex environments)
-    - Additionally, for *simple*, *ad-hoc* generative workflows, a tool exists that lets you invoke *yourself* via the command line, and in theory, this tool enables the spawning of fully autoomous agent swarms. Ask for more information
+    - Additionally, for *simple*, *ad-hoc* generative workflows, a tool exists that lets you invoke *yourself* via the command line, and in theory, this tool enables the spawning of fully autonomous agent swarms. Ask for more information
 </STANDARD_OPERATING_PROCEDURES>"""
+
+def get_system_information():
+    """
+    Gather system information in a portable way that works on both Linux and Mac.
+    Returns a string containing the system information in the format expected by the prompt files.
+    """
+    system_info = []
+    
+    # Determine OS
+    try:
+        os_name = platform.system()
+        if os_name == "Darwin":
+            # macOS
+            os_version = platform.mac_ver()[0]
+            system_info.append(f"macOS {os_version}")
+        elif os_name == "Linux":
+            # Try to get Linux distribution info
+            try:
+                # Try using /etc/os-release first
+                with open('/etc/os-release', 'r') as f:
+                    os_release = {}
+                    for line in f:
+                        if '=' in line:
+                            key, value = line.rstrip().split('=', 1)
+                            os_release[key] = value.strip('"')
+                
+                if 'PRETTY_NAME' in os_release:
+                    system_info.append(os_release['PRETTY_NAME'])
+                else:
+                    system_info.append(f"Linux ({os_release.get('NAME', 'Unknown Distribution')})")
+            except:
+                # Fall back to lsb_release
+                try:
+                    result = subprocess.run(['lsb_release', '-d'], capture_output=True, text=True)
+                    if result.returncode == 0:
+                        distro = result.stdout.strip().split(':', 1)[1].strip()
+                        system_info.append(f"Linux ({distro})")
+                    else:
+                        system_info.append("Linux (Unspecified Distro)")
+                except:
+                    system_info.append("Linux (Unspecified Distro)")
+        else:
+            # Other OS
+            system_info.append(f"{os_name} {platform.version()}")
+    except:
+        system_info.append("Linux (Unspecified Distro)")
+    
+    # Try to detect desktop environment (Linux only)
+    if os_name == "Linux":
+        try:
+            # Check for common desktop environment variables
+            desktop_env = None
+            for env_var in ['XDG_CURRENT_DESKTOP', 'DESKTOP_SESSION', 'GNOME_DESKTOP_SESSION_ID', 'KDE_FULL_SESSION']:
+                result = subprocess.run(f'echo ${env_var}', shell=True, capture_output=True, text=True)
+                if result.returncode == 0 and result.stdout.strip():
+                    desktop_env = result.stdout.strip()
+                    break
+            
+            if desktop_env:
+                # Determine if X11 or Wayland
+                display_server = "X11"  # Default assumption
+                try:
+                    result = subprocess.run('echo $XDG_SESSION_TYPE', shell=True, capture_output=True, text=True)
+                    if result.returncode == 0 and 'wayland' in result.stdout.lower():
+                        display_server = "Wayland"
+                except:
+                    pass
+                
+                system_info.append(f"{desktop_env} on {display_server}")
+        except:
+            pass
+    
+    # Get CPU info
+    try:
+        if os_name == "Darwin":
+            result = subprocess.run(['sysctl', '-n', 'machdep.cpu.brand_string'], capture_output=True, text=True)
+            if result.returncode == 0:
+                cpu_info = result.stdout.strip()
+                system_info.append(cpu_info)
+        else:  # Linux
+            try:
+                with open('/proc/cpuinfo', 'r') as f:
+                    for line in f:
+                        if 'model name' in line:
+                            cpu_info = line.split(':', 1)[1].strip()
+                            system_info.append(cpu_info)
+                            break
+            except:
+                # Try using lscpu as fallback
+                result = subprocess.run(['lscpu'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    for line in result.stdout.split('\n'):
+                        if 'Model name:' in line:
+                            cpu_info = line.split(':', 1)[1].strip()
+                            system_info.append(cpu_info)
+                            break
+    except:
+        pass
+    
+    # Get screen resolution
+    try:
+        if os_name == "Linux":
+            result = subprocess.run(['xrandr'], capture_output=True, text=True)
+            if result.returncode == 0:
+                # Look for connected displays and their resolutions
+                for line in result.stdout.split('\n'):
+                    if ' connected ' in line:
+                        match = re.search(r'(\d+x\d+)', line)
+                        if match:
+                            system_info.append(f"Screen resolution: {match.group(1)}")
+                            break
+        elif os_name == "Darwin":
+            result = subprocess.run(['system_profiler', 'SPDisplaysDataType'], capture_output=True, text=True)
+            if result.returncode == 0:
+                for line in result.stdout.split('\n'):
+                    if 'Resolution:' in line:
+                        resolution = line.split(':', 1)[1].strip()
+                        system_info.append(f"Screen resolution: {resolution}")
+                        break
+    except:
+        pass
+    
+    # Add some default input device information
+    system_info.append("Mouse/Touchpad: Yes")
+    
+    # If we couldn't gather much information, add some fallback entries
+    if len(system_info) < 2:
+        if not any("Linux" in info for info in system_info) and not any("macOS" in info for info in system_info):
+            system_info.append("Linux (Unspecified Distro)")
+        if not any("CPU" in info for info in system_info):
+            system_info.append("CPU: Unknown")
+    
+    return "\n".join(system_info)
 
 def init_config():
     """Initialize the config file with default values if it doesn't exist"""
@@ -175,17 +311,41 @@ def init_config():
     # Create PROMPTS_DIR if it doesn't exist
     PROMPTS_DIR.mkdir(exist_ok=True, parents=True)
     
-    # Create agentic.prompt.xml if it doesn't exist
+    # Generate system information only when creating the prompt files for the first time
     agentic_prompt_path = PROMPTS_DIR / "agentic.prompt.xml"
+    atomic_prompt_path = PROMPTS_DIR / "atomic.prompt.xml"
+    
+    # Only generate system information if the prompt files don't exist
+    if not agentic_prompt_path.exists() or not atomic_prompt_path.exists():
+        try:
+            system_info = get_system_information()
+        except Exception as e:
+            print(f"Warning: Failed to gather system information: {e}")
+            system_info = "Linux (Unspecified Distro)\nCPU: Unknown"
+    
+    # Create agentic.prompt.xml if it doesn't exist
     if not agentic_prompt_path.exists():
+        # Replace the hardcoded system_information block with the generated one
+        agentic_content = AGENTIC_PROMPT_CONTENT
+        if "<system_information>" in agentic_content and "</system_information>" in agentic_content:
+            start_idx = agentic_content.find("<system_information>") + len("<system_information>")
+            end_idx = agentic_content.find("</system_information>")
+            agentic_content = agentic_content[:start_idx] + "\n" + system_info + "\n" + agentic_content[end_idx:]
+        
         with open(agentic_prompt_path, 'w') as f:
-            f.write(AGENTIC_PROMPT_CONTENT)
+            f.write(agentic_content)
     
     # Create atomic.prompt.xml if it doesn't exist
-    atomic_prompt_path = PROMPTS_DIR / "atomic.prompt.xml"
     if not atomic_prompt_path.exists():
+        # Replace the hardcoded system_information block with the generated one
+        atomic_content = ATOMIC_PROMPT_CONTENT
+        if "<system_information>" in atomic_content and "</system_information>" in atomic_content:
+            start_idx = atomic_content.find("<system_information>") + len("<system_information>")
+            end_idx = atomic_content.find("</system_information>")
+            atomic_content = atomic_content[:start_idx] + "\n" + system_info + "\n" + atomic_content[end_idx:]
+        
         with open(atomic_prompt_path, 'w') as f:
-            f.write(ATOMIC_PROMPT_CONTENT)
+            f.write(atomic_content)
 
 
 def get_config():

@@ -1,4 +1,4 @@
-Case Study: Test Thyself
+## Case Study: Test Thyself
 
 Shabbosgoy was never supposed to be a product - it started life as a trivial 50 line script that queried a LLM with instructions to translate user prompts to shell commands, to assist with my semi-dyslexic ineptitude when it comes to the command-line side of devops and software engineering.
 

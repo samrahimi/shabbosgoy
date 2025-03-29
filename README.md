@@ -8,10 +8,10 @@ This README is a work in progress...
 ## Installation
 
 ```bash
-pip install  https://github.com/samrahimi/shabbosgoy/raw/refs/heads/main/dist/shabbosgoy-0.2.0.tar.gz
+pip install  https://github.com/samrahimi/shabbosgoy/raw/refs/heads/main/dist/shabbosgoy-0.2.1.tar.gz
 
 #Debian / Ubuntu (see note below):
-#pip install --break-system-packages https://github.com/samrahimi/shabbosgoy/raw/refs/heads/main/dist/shabbosgoy-0.2.0.tar.gz
+#pip install --break-system-packages https://github.com/samrahimi/shabbosgoy/raw/refs/heads/main/dist/shabbosgoy-0.2.1.tar.gz
 ```
 
 Or build a development version with live edits:

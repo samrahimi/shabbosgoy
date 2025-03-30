@@ -3,6 +3,7 @@
 
 import sys
 import time
+import os
 
 def error_exit(message):
     """Display error message and exit"""
@@ -72,4 +73,16 @@ def display_execution_warning(countdown_seconds=3):
         time.sleep(1)
     print("\r\033[31mExecuting now!                      \033[0m")
 
-import os  # Added missing import
+def confirm_action(message):
+    """Ask for confirmation before proceeding with an action
+    
+    Args:
+        message (str): The confirmation message to display
+    
+    Returns:
+        bool: True if confirmed, False otherwise
+    """
+    response = input(f"{message} (y/n): ").strip().lower()
+    return response == 'y' or response == 'yes'
+
+

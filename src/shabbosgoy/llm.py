@@ -9,7 +9,7 @@ def send_llm_request(api_endpoint, api_key, model_name, temperature, system_prom
     """Send a request to the LLM API and return the response content"""
     # Only show query info if not in headless mode
     if not headless:
-        print(f"\033[34mSending query to LLM: {user_query[:max_input_context]}{'...' if len(user_query) > max_input_context else ''}\033[0m")
+        print(f"\033[34mSending query to LLM: {user_query[:max_input_context]}{'...' if len(user_query) > max_input_context * 4 else ''}\033[0m")
         print("Contacting LLM service...")
 
     # Prepare the JSON payload

@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Path to the original script
+ORIGINAL_SCRIPT="./summarize_memory.sh"
+SUMMARY_FILE="$HOME/.shabbosgoy/memory_summaries.json"
+
+# Check if the original script exists
+if [ ! -f "$ORIGINAL_SCRIPT" ]; then
+    echo "Error: Original script $ORIGINAL_SCRIPT not found."
+    exit 1
+fi
+
+# Run the original script
+echo "Running memory summarization..."
+$ORIGINAL_SCRIPT
+
+# Check if the summary file was created
+if [ ! -f "$SUMMARY_FILE" ]; then
+    echo "Error: Summary file $SUMMARY_FILE was not created."
+    exit 1
+fi
+
+# Display the summary file
+echo -e "\n=== MEMORY SUMMARIES ===\n"
+cat "$SUMMARY_FILE"
+echo -e "\n=== END OF SUMMARIES ===\n"
+
+echo "You can now review these summaries and create skills based on the learnings."
+echo "Use the 'learn_from_experience' skill to guide you through this process."

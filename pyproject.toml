@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shabbosgoy"
-version = "0.2.1"
-description = "An agentic AI sysadmin tool for Linux terminal environments. Supports all chat completions API services including OpenAI, OpenRouter, Gemini, and Ollama"
+version = "0.3.1"
+description = "An agentic AI sysadmin tool for Linux terminal environments. Supports all chat completions API services including OpenAI, OpenRouter, Gemini, and Ollama. The current build contains major improvements including streaming tool outputs, skills and tools, and an automated build and release script. Documentation is shitty and out of date, contact developer at samrahimi420@gmail.com for support"
 readme = "README.md"
 authors = [
     {name = "Sam Rahimi", email = "samrahimi420@gmail.com"}

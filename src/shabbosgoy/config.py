@@ -10,6 +10,8 @@ import re
 # Paths (hardcoded settings)
 DATA_DIR = Path.home() / ".shabbosgoy"
 WORKING_MEMORY_DIR = DATA_DIR / "memory"
+TOOLS_DIR = DATA_DIR / "tools"
+SKILLS_DIR = DATA_DIR / "skills"
 PROMPTS_DIR = DATA_DIR / "prompts"
 CONFIG_FILE = DATA_DIR / "config.json"
 
@@ -311,6 +313,12 @@ def init_config():
     # Create PROMPTS_DIR if it doesn't exist
     PROMPTS_DIR.mkdir(exist_ok=True, parents=True)
     
+    # Create TOOLS_DIR if it doesn't exist
+    TOOLS_DIR.mkdir(exist_ok=True, parents=True)
+    
+    # Create SKILLS_DIR if it doesn't exist
+    SKILLS_DIR.mkdir(exist_ok=True, parents=True)
+    
     # Generate system information only when creating the prompt files for the first time
     agentic_prompt_path = PROMPTS_DIR / "agentic.prompt.xml"
     atomic_prompt_path = PROMPTS_DIR / "atomic.prompt.xml"
@@ -374,11 +382,17 @@ def set_config_item(key, value):
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f, indent=4)
 
-def load_system_prompt(is_agentic):
+def load_system_prompt(is_agentic, tools_list=None, skills_list=None):
     """Load system prompt based on mode"""
     # Get custom instructions from config
     config = get_config()
     custom_instructions = config.get('custom_instructions', '')
+    
+    # Import here to avoid circular imports
+    from shabbosgoy.tools import get_tools_block, get_tool_use_block
+    # Import skills module
+    from shabbosgoy.skills import get_skills_block, get_skill_use_block
+    
     
     # Select system prompt based on mode
     grounding_prompt_path = PROMPTS_DIR / "agentic.prompt.xml" if is_agentic else PROMPTS_DIR / "atomic.prompt.xml"
@@ -388,16 +402,27 @@ def load_system_prompt(is_agentic):
         error_exit(f"System prompt file not found: {grounding_prompt_path}")
     
     with open(grounding_prompt_path, "r") as f:
-        grounding_prompt = f.read()    # Add custom instructions if present
-    if len(custom_instructions.strip()) > 0:
-        system_prompt = f"{grounding_prompt}\n<AdditionalSystemContext>{custom_instructions.strip()}</AdditionalSystemContext>"
-
+        grounding_prompt = f.read()
+    
+    # Start with the base prompt
+    system_prompt = grounding_prompt
+    
+    # Add tools information if tools are specified
+    if tools_list and len(tools_list) > 0:
+        tools_block = get_tools_block(tools_list)
+        tool_use_block = get_tool_use_block()
+        if tools_block:
+            system_prompt = f"{system_prompt}\n\n{tools_block}\n\n{tool_use_block}"
+            
+    # Add skills information if skills are specified
+    if skills_list and len(skills_list) > 0:
+        skills_block = get_skills_block(skills_list)
+        skill_use_block = get_skill_use_block()
+        if skills_block:
+            system_prompt = f"{system_prompt}\n\n{skills_block}\n\n{skill_use_block}"
     
     # Add custom instructions if present
     if len(custom_instructions.strip()) > 0:
-        system_prompt = f"{grounding_prompt}\n<AdditionalSystemContext>{custom_instructions.strip()}</AdditionalSystemContext>"
-    else:
-        system_prompt = grounding_prompt
-        config = get_config()
+        system_prompt = f"{system_prompt}\n\n<AdditionalSystemContext>\n{custom_instructions.strip()}\n</AdditionalSystemContext>"
 
     return system_prompt

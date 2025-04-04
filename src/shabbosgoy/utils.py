@@ -4,6 +4,54 @@
 import sys
 import time
 import os
+import json
+
+class Block:
+    def __init__(self, name="", content="", children: list=[]):
+        self.name=name
+        self.content=content
+        self.children= children
+
+    def append_child(self, child_block):
+        self.children.append(child_block)
+    
+    def render(self, format="xml", header_level=1, max_nesting=4):
+       if (format=="dict"):
+        return {"name": self.name, 'content': self.content, 'children': [c.render("dict") for c in self.children]}
+       
+       elif (format == "json"):
+        return json.dumps({"name": self.name, 'content': self.content, 'children': [c.render("dict") for c in self.children]}, indent=2)
+       
+       elif (format == "xml"):
+        return f"""
+        <{self.name}>
+            {self.content}
+            {[c.render("xml") for c in self.children]}
+        </{self.name}>
+        """
+       
+       elif (format == "markdown"):
+        # we recursively increase the header nesting up to the max
+        # and show a final set of children as name only, bulleted listS
+        if (header_level > max_nesting):
+            return f"\n- {self.name} (Content Truncated)"
+        
+        header = "#" * header_level
+        return f"""
+        {header} {self.name}
+        {self.content}
+
+        {[c.render("markdown", header_level=header_level+1, max_nesting=max_nesting) for c in self.children]}
+        """
+       elif (format == "hybrid"):
+        return f"""
+        <{self.name}>
+            {self.content}
+            {[c.render("markdown", header_level=header_level+1, max_nesting=max_nesting) for c in self.children]}
+        </{self.name}>
+        """
+
+    
 
 def error_exit(message):
     """Display error message and exit"""

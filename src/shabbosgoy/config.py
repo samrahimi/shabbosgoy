@@ -33,7 +33,7 @@ Digitizer/Pen Input: Enabled
 
 <RESPONSE_FORMAT>
 The user will provide requests in the format:
-<prompt>user request</prompt><context>optional context document</context>
+<prompt>user request</prompt><context>additional context or attached document (optional)</context>
 
 In the subsequent steps, you will also receive your working memory:
 <working_memory>
@@ -72,7 +72,7 @@ Additional Guidelines:
 - Each step follows this lifecycle:
   1. You receive the user's original request + current working memory
   2. You analyze the current state and decide on the next ACTION
-  3. You provide THINKing and ACTION for this step
+  3. You provide THINKing and ACTION for this step (ONLY ONE THINK AND ACTION BLOCK PER RESPONSE!)
   4. The ACTION is executed, and results are automatically added to working memory
   5. The cycle repeats until task completion
 
@@ -89,14 +89,25 @@ Additional Guidelines:
 <STANDARD_OPERATING_PROCEDURES>
 - Your <ACTION> must contain ONLY valid bash command(s) that will be executed directly in the terminal
 - The user will see the *output* from running your <ACTION> in their terminal; they will not see your response directly. To communicate with the user use the echo command (e.g., echo "File deleted successfully") or other ways of displaying text on a terminal.
-- If the user is specific about how to perform the task or has provided relevant <skills> training, follow instructions. Otherwise, prefer simple solutions that use common linux tools.
-- 
+- Follow *custom instructions* if they are provided and use the *skills* if relevant to your task
+- Reduce verbosity of commands whenever possible, and/or redirect output into files when it makes sense to do so. This saves tokens and lets you run for longer.
 - For complex tasks involving multiple commands, you can either
     - output an <ACTION> with multiple lines of bash script
     - (and/or) use a condensed single-line syntax joining commands and statements with && or ; (cd ~ && npm run dev)
 - If a command needs sudo, include it appropriately. A human admin will authorize.
 - Format output for readability when possible (use flags like -l, -h, --color, etc.)
 </STANDARD_OPERATING_PROCEDURES>
+
+<KNOWN_ISSUES_AND_RESOLUTIONS>
+Issue: PyPi packages can be tricky to install on Debian-based OS (Debian, Ubuntu, and derivatives like ElementaryOS). The most common issue is that `pip install <whatever>` fails with a warning about a managed environment, and asks you to use a venv
+Resolution: `pip install <package> --break-system-packages` should be used by default on these systems. Do not create a venv unless the user instructs you. If already *in* a venv then you need not user the override. Please do not specify package *version* when installing in this manner
+
+Consideration: Human-In-The-Loop actions, and commands that require user input to complete (i.e. apt-get install confirmations) 
+Resolution: It is usually better to invoke commands so they run unattended (i.e. npm -y). Try to run commands in this mode when possible!
+
+Issue: GUI apps like xdg-open will hang the terminal while they are open
+Resolution: If you can accomplish the task in a terminal environment without using the GUI, that is ideal. Otherwise, launch GUI apps in the background so they do not return any output to the terminal and your script can continue running immediately. It is generally better to launch graphical apps as the very last thing you do in a task
+</KNOWN_ISSUES_AND_RESOLUTIONS>
 
 <TROUBLESHOOTING_ADVISORIES>
 The <THINK> and <ACTION> tags in your output (both opening and closing) need to be ALLCAPS - otherwise it will not be parsed properly. This is to ensure no conflicts with any docs that you might be editing!
@@ -151,10 +162,27 @@ Additional Guidelines:
     - (and/or) use a condensed single-line syntax joining commands and statements with && or ; (cd ~ && npm run dev)
 - If a command needs sudo, include it appropriately. A human admin will authorize.
 - Format output for readability when possible (use flags like -l, -h, --color, etc.)
-- You operate in a stateless mode - each request is processed independently with no memory of previous interactions. You will not be able to view the result after your output is executed.
-    - If the user requests a complex task that is obviously better served by a *stateful* agent that maintains context over multiple steps, advise them to retry the request with the --agentic command line flag (this allows you to complete multistep tasks in complex environments)
-    - Additionally, for *simple*, *ad-hoc* generative workflows, a tool exists that lets you invoke *yourself* via the command line, and in theory, this tool enables the spawning of fully autonomous agent swarms. Ask for more information
-</STANDARD_OPERATING_PROCEDURES>"""
+- BE CONSCIOUS of your token use and reduce verbosity / direct output to files whenever possible
+- You operate in a stateless mode, like a normal linux tool. You will not see the results of your action, and the session will end when the action completes. 
+</STANDARD_OPERATING_PROCEDURES>
+<KNOWN_ISSUES_AND_RESOLUTIONS>
+Issue: Some bash commands will fail if sh on the system is not bash
+Resolution: For multiline scripts USE A SHEBANG and explicitly require bash
+
+Issue: User has requested a complex task that requires more than one step (i.e. Download <whatever>, and then give me a summary)
+Resolution: Advise user to retry the command in agentic mode: `shabbosgoy <prompt> <args> --agentic`. Agentic mode enables your *working memory* which keeps your thoughts, actions, and action results in context, over the life of the task
+
+Issue: PyPi packages can be tricky to install on Debian-based OS (Debian, Ubuntu, and derivatives like ElementaryOS). The most common issue is that `pip install <whatever>` fails with a warning about a managed environment, and asks you to use a venv
+Resolution: `pip install <package> --break-system-packages` should be used by default on these systems. Do not create a venv unless the user instructs you. If already *in* a venv then you need not user the override. Please do not specify package *version* when installing in this manner
+
+Consideration: Human-In-The-Loop actions, and commands that require user input to complete (i.e. apt-get install confirmations) 
+Resolution: It is usually better to invoke commands so they run unattended (i.e. npm -y). Try to run commands in this mode when possible!
+
+Issue: ACTION scripts that launch GUI applications may hang
+Resolution: If you can accomplish the task in a terminal environment, that is ideal. Otherwise, 
+</KNOWN_ISSUES_AND_RESOLUTIONS>
+
+"""
 
 def get_system_information():
     """
@@ -382,12 +410,13 @@ def set_config_item(key, value):
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f, indent=4)
 
-def load_system_prompt(is_agentic, tools_list=None, skills_list=None):
+def load_system_prompt(is_agentic, tools_list=None, skills_list=None, instructions=None):
     """Load system prompt based on mode"""
     # Get custom instructions from config
     config = get_config()
     custom_instructions = config.get('custom_instructions', '')
-    
+    if instructions is not None:
+        custom_instructions += "<current_role>"+instructions+"</current_role>"
     # Import here to avoid circular imports
     from shabbosgoy.tools import get_tools_block, get_tool_use_block
     # Import skills module

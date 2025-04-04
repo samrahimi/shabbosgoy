@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8">System Dashboard</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- CPU Usage Card -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">CPU Usage</h2>
+                <div class="h-48">
+                    <canvas id="cpuChart"></canvas>
+                </div>
+                <div id="cpu-details" class="mt-4 text-gray-700"></div>
+            </div>
+            
+            <!-- Memory Usage Card -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Memory Usage</h2>
+                <div class="h-48">
+                    <canvas id="memoryChart"></canvas>
+                </div>
+                <div id="memory-details" class="mt-4 text-gray-700"></div>
+            </div>
+            
+            <!-- Disk Usage Card -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Disk Usage</h2>
+                <div class="h-48">
+                    <canvas id="diskChart"></canvas>
+                </div>
+                <div id="disk-details" class="mt-4 text-gray-700"></div>
+            </div>
+        </div>
+        
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">System Information</h2>
+            <pre id="raw-data" class="bg-gray-100 p-4 rounded overflow-auto max-h-96"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Function to load system information from JSON file
+        function loadSystemInfo() {
+            $.getJSON('system_info.json', function(data) {
+                // Display raw data
+                $('#raw-data').text(JSON.stringify(data, null, 2));
+                
+                // Update CPU chart
+                if (data.cpu) {
+                    updateCpuChart(data.cpu);
+                    $('#cpu-details').html(`<p>Model: ${data.cpu.model || 'N/A'}</p><p>Cores: ${data.cpu.cores || 'N/A'}</p>`);
+                }
+                
+                // Update Memory chart
+                if (data.memory) {
+                    updateMemoryChart(data.memory);
+                    $('#memory-details').html(`<p>Total: ${formatBytes(data.memory.total)}</p><p>Free: ${formatBytes(data.memory.free)}</p>`);
+                }
+                
+                // Update Disk chart
+                if (data.disk) {
+                    updateDiskChart(data.disk);
+                    $('#disk-details').html(`<p>Total: ${formatBytes(data.disk.total)}</p><p>Free: ${formatBytes(data.disk.free)}</p>`);
+                }
+            }).fail(function() {
+                console.error("Could not load system_info.json");
+                $('#raw-data').text("Error: Could not load system information. Make sure system_info.json exists.");
+            });
+        }
+        
+        // Helper function to format bytes
+        function formatBytes(bytes, decimals = 2) {
+            if (!bytes) return 'N/A';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+        
+        // Initialize charts
+        let cpuChart, memoryChart, diskChart;
+        
+        function initCharts() {
+            // CPU Chart
+            const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+            cpuChart = new Chart(cpuCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Used', 'Free'],
+                    datasets: [{
+                        data: [0, 100],
+                        backgroundColor: ['#4F46E5', '#E5E7EB']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Memory Chart
+            const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+            memoryChart = new Chart(memoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Used', 'Free'],
+                    datasets: [{
+                        data: [0, 100],
+                        backgroundColor: ['#10B981', '#E5E7EB']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Disk Chart
+            const diskCtx = document.getElementById('diskChart').getContext('2d');
+            diskChart = new Chart(diskCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Used', 'Free'],
+                    datasets: [{
+                        data: [0, 100],
+                        backgroundColor: ['#F59E0B', '#E5E7EB']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+        
+        function updateCpuChart(cpuData) {
+            if (cpuData.usage !== undefined) {
+                cpuChart.data.datasets[0].data = [cpuData.usage, 100 - cpuData.usage];
+                cpuChart.update();
+            }
+        }
+        
+        function updateMemoryChart(memoryData) {
+            if (memoryData.total && memoryData.free) {
+                const used = memoryData.total - memoryData.free;
+                const usedPercentage = (used / memoryData.total) * 100;
+                memoryChart.data.datasets[0].data = [usedPercentage, 100 - usedPercentage];
+                memoryChart.update();
+            }
+        }
+        
+        function updateDiskChart(diskData) {
+            if (diskData.total && diskData.free) {
+                const used = diskData.total - diskData.free;
+                const usedPercentage = (used / diskData.total) * 100;
+                diskChart.data.datasets[0].data = [usedPercentage, 100 - usedPercentage];
+                diskChart.update();
+            }
+        }
+        
+        // Initialize and load data
+        $(document).ready(function() {
+            initCharts();
+            loadSystemInfo();
+            
+            // Refresh data every 30 seconds
+            setInterval(loadSystemInfo, 30000);
+        });
+    </script>
+</body>
+</html>

@@ -194,6 +194,7 @@ def main():
             print("Tool removal cancelled.")
         return
     
+
     # Handle skill management
     if args.create_skill:
         # Check if required parameters are provided
@@ -301,8 +302,10 @@ def main():
                     f"No skills available. You need to create skills first.\n"
                     f"To create a new skill: shabbosgoy --create-skill skill_name=\"{skill}\" description=\"description\""
                 )
-                
-    system_prompt = load_system_prompt(args.agentic, tools_list, skills_list)
+    
+
+    system_prompt = load_system_prompt(args.agentic, tools_list, skills_list, instructions= args.custom_instructions if args.custom_instructions else None)
+
     
     # Run in agentic mode or standard mode
     if args.agentic or sys.argv[0] == "shiksa":

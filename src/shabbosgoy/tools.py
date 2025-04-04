@@ -48,11 +48,11 @@ def create_tool(tool_name, tool_script_path, description):
         os.chmod(tool_path, 0o755)
         
         # Create toolinfo file
-        toolinfo_content = f"""# {tool_name}
+        toolinfo_content = f"""
+## {tool_name}
+Path: {tool_path}
+Usage: {description}
 
-{description}
-
-**Path:** {tool_path}
 """
         with open(toolinfo_path, 'w') as f:
             f.write(toolinfo_content)
